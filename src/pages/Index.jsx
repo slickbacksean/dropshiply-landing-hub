@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Upload, Play, CheckCircle, Star } from 'lucide-react';
+import { Upload, Play, CheckCircle, Star, Image, Link, TrendingUp, Zap, BarChart, Shield } from 'lucide-react';
 
 const Index = () => {
   return (
@@ -59,17 +59,17 @@ const Index = () => {
           <h2 className="text-3xl font-bold mb-12 text-center">Key Features</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { icon: 'image', title: 'Image Recognition', description: 'Upload any product image and get instant results' },
-              { icon: 'link', title: 'Wholesale Links', description: 'Access a vast network of verified wholesale suppliers' },
-              { icon: 'trending-up', title: 'Price Comparison', description: 'Compare prices across multiple platforms in real-time' },
-              { icon: 'zap', title: 'AI-Powered', description: 'Leverage advanced AI for accurate product matching' },
-              { icon: 'bar-chart', title: 'Market Analysis', description: 'Get insights on product trends and market demand' },
-              { icon: 'shield', title: 'Secure Transactions', description: 'Ensure safe and protected business dealings' }
+              { Icon: Image, title: 'Image Recognition', description: 'Upload any product image and get instant results' },
+              { Icon: Link, title: 'Wholesale Links', description: 'Access a vast network of verified wholesale suppliers' },
+              { Icon: TrendingUp, title: 'Price Comparison', description: 'Compare prices across multiple platforms in real-time' },
+              { Icon: Zap, title: 'AI-Powered', description: 'Leverage advanced AI for accurate product matching' },
+              { Icon: BarChart, title: 'Market Analysis', description: 'Get insights on product trends and market demand' },
+              { Icon: Shield, title: 'Secure Transactions', description: 'Ensure safe and protected business dealings' }
             ].map((feature) => (
               <Card key={feature.title} className="bg-white border-none shadow-md">
                 <CardContent className="p-6 flex flex-col items-center text-center">
                   <div className="bg-[#3991C6] rounded-full p-3 mb-4">
-                    <lucide-react.{feature.icon} className="text-white" size={24} />
+                    <feature.Icon className="text-white" size={24} />
                   </div>
                   <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
                   <p className="text-[#4A4A4A]">{feature.description}</p>
