@@ -1,63 +1,51 @@
-import boto3
-import os
+import torch
+from torchvision import models, transforms
+from PIL import Image
+import numpy as np
 import requests
-from io import BytesIO
 
-class AWSRekognition:
+class ImageProcessor:
     def __init__(self):
-        self.rekognition = boto3.client('rekognition')
-        self.s3 = boto3.client('s3')
-        self.bucket_name = os.environ.get('S3_BUCKET_NAME')
+        # Load pre-trained ResNet152 model
+        self.model = models.resnet152(pretrained=True)
+        self.model.eval()  # Set to evaluation mode
+        # Remove the last fully-connected layer
+        self.model = torch.nn.Sequential(*list(self.model.children())[:-1])
+        # Define image transformations
+        self.transform = transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
 
-    def upload_image(self, image_data, image_name):
-        try:
-            self.s3.put_object(Bucket=self.bucket_name, Key=image_name, Body=image_data)
-            return image_name
-        except Exception as e:
-            print(f"Error uploading image to S3: {str(e)}")
-            return None
+    def extract_features(self, image_path):
+        # Load and preprocess the image
+        image = Image.open(image_path).convert('RGB')
+        image = self.transform(image).unsqueeze(0)  # Add batch dimension
+        # Extract features
+        with torch.no_grad():
+            features = self.model(image)
+        # Reshape and convert to numpy array
+        features = features.squeeze().numpy()
+        return features
 
-    def compare_images(self, source_image, target_image):
-        try:
-            response = self.rekognition.compare_faces(
-                SourceImage={'S3Object': {'Bucket': self.bucket_name, 'Name': source_image}},
-                TargetImage={'S3Object': {'Bucket': self.bucket_name, 'Name': target_image}},
-                SimilarityThreshold=70
-            )
-            if response['FaceMatches']:
-                return response['FaceMatches'][0]['Similarity']
-            return 0
-        except Exception as e:
-            print(f"Error comparing images: {str(e)}")
-            return 0
+    def compute_similarity(self, features1, features2):
+        # Compute cosine similarity between two feature vectors
+        return np.dot(features1, features2) / (np.linalg.norm(features1) * np.linalg.norm(features2))
 
-def find_similar_products(rekognition, source_image, products):
+def find_similar_products(image_processor, product_features, scraped_products):
     similar_products = []
-    for product in products:
-        try:
-            # Download the product image
-            response = requests.get(product[2])  # Assuming index 2 is the image_url
-            if response.status_code == 200:
-                image_data = BytesIO(response.content)
-                product_image_name = f"product_{product[0]}.jpg"  # Assuming index 0 is product_id
-                
-                # Upload the product image to S3
-                uploaded_image = rekognition.upload_image(image_data.getvalue(), product_image_name)
-                
-                if uploaded_image:
-                    # Compare the uploaded product image with the source image
-                    similarity = rekognition.compare_images(source_image, uploaded_image)
-                    
-                    if similarity > 70:  # 70% similarity threshold
-                        similar_products.append({
-                            'product_id': product[0],
-                            'title': product[1],
-                            'image_url': product[2],
-                            'price': product[3],
-                            'similarity': similarity
-                        })
-        except Exception as e:
-            print(f"Error processing product {product[0]}: {str(e)}")
-            continue
-
+    for product in scraped_products:
+        # Download and process the product image
+        response = requests.get(product['image_url'])
+        with open('temp_image.jpg', 'wb') as f:
+            f.write(response.content)
+        product_image_features = image_processor.extract_features('temp_image.jpg')
+        similarity = image_processor.compute_similarity(product_features, product_image_features)
+        if similarity > 0.7:  # Adjust this threshold as needed
+            similar_products.append({
+                **product,
+                'similarity': similarity
+            })
     return sorted(similar_products, key=lambda x: x['similarity'], reverse=True)
