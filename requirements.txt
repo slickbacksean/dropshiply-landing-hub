@@ -1,0 +1,10 @@
+Flask
+SQLAlchemy
+torch
+torchvision
+Pillow
+numpy
+requests
+python-dotenv
+Flask-Caching
+flasgger
