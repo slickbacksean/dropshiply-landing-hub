@@ -5,9 +5,25 @@ from io import BytesIO
 
 class AWSRekognition:
     def __init__(self):
-        self.rekognition = boto3.client('rekognition')
-        self.s3 = boto3.client('s3')
-        self.bucket_name = os.environ.get('S3_BUCKET_NAME')
+        # Retrieve AWS credentials and region from environment variables
+        aws_access_key_id = os.environ.get('MY_AWS_ACCESS_KEY_ID')
+        aws_secret_access_key = os.environ.get('MY_AWS_SECRET_ACCESS_KEY')
+        aws_region = os.environ.get('MY_AWS_REGION')
+
+        # Initialize AWS clients with the custom environment variables
+        self.rekognition = boto3.client(
+            'rekognition',
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+            region_name=aws_region
+        )
+        self.s3 = boto3.client(
+            's3',
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+            region_name=aws_region
+        )
+        self.bucket_name = os.environ.get('dropshiply')  # Current bucket name
 
     def upload_image(self, image_data, image_name):
         try:
